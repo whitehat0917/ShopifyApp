@@ -1,5 +1,5 @@
 const config = {
-    api_url: 'https://8949c67188c9.ngrok.io/api/'
+    api_url: 'https://4f81c842dd97.ngrok.io/api/'
 };
 
 export default config;

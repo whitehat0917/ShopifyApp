@@ -140,6 +140,9 @@ app.prepare().then(() => {
   const serverModel = require('@models/servers');
   let promise = serverModel.getActiveServer();
   promise.then(async (serverData) => {
+    cron.schedule('* * * * *', () => {
+      communicate.scheduleOrder();
+    });
     if (serverData.option == 1){
       cron.schedule('* * * * *', () => {
         communicate.schedule();

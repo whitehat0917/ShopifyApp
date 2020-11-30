@@ -9,7 +9,7 @@ $(document).ready(function(){
       quantity = $(this).find(".cart__quantity-td").find(".cart__qty").find(".cart__qty-input").val();
       data.push({id: id, quantity: quantity});
     });
-    $.post( "https://8949c67188c9.ngrok.io/api/checkStock", { data: JSON.stringify(data) })
+    $.post( "https://4f81c842dd97.ngrok.io/api/checkStock", { data: JSON.stringify(data) })
     .done(function( data ) {
       if (data == true){
         $(".additional-checkout-buttons").css("display", "block");
@@ -22,7 +22,7 @@ $(document).ready(function(){
   setTimeout(function(){
     if (meta.product){
       data = [{id: meta.product.id, quantity: "1"}];
-      $.post( "https://8949c67188c9.ngrok.io/api/checkStock", { data: JSON.stringify(data) })
+      $.post( "https://4f81c842dd97.ngrok.io/api/checkStock", { data: JSON.stringify(data) })
       .done(function( data ) {
         if (data == false){
             alert("Stock is not enough!");
@@ -43,7 +43,7 @@ $(document).ready(function(){
       quantity = $(this).find(".cart__quantity-td").find(".cart__qty").find(".cart__qty-input").val();
       data.push({id: id, quantity: quantity});
     });
-    $.post( "https://8949c67188c9.ngrok.io/api/checkStock", { data: JSON.stringify(data) })
+    $.post( "https://4f81c842dd97.ngrok.io/api/checkStock", { data: JSON.stringify(data) })
     .done(function( data ) {
       if (data == true){
         $(this).unbind(e);

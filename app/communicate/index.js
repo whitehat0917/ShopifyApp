@@ -24,6 +24,14 @@ async function schedule() {
                 await createProduct(productList[i], shopData);
             }
         }
+    })
+    return;
+}
+
+async function scheduleOrder() {
+    let promise = serverModel.getActiveServer();
+    promise.then(async (serverData) => {
+        let shopData = await shopModel.findActiveShop();
         await transferOrders(shopData, serverData);
     })
     return;
@@ -102,6 +110,7 @@ function updateProduct(product, shop, id) {
         "  }" +
         "}" +
         "}";
+        console.log(query)
     query = JSON.stringify({
         query: query
     });
@@ -140,7 +149,9 @@ function createProductQuery(data) {
     if (data.Descripcion) {
         query += 'descriptionHtml: "' + data.Descripcion + '",';
     }
-    if (data.Descontinuado) {
+    if (data.Descontinuado && data.Descontinuado == true) {
+        query += 'published: false,';
+    }else{
         query += 'published: true,';
     }
     if (data.RutaImagenes) {
@@ -160,6 +171,7 @@ function createProductQuery(data) {
         query += 'variants: [';
         for (let i = 0;i<data.DetalleProductos.length;i++){
             query += '{';
+            query += 'taxable: false,';
             if (data.Existensia) {
                 query += 'inventoryQuantities: [{availableQuantity: ' + data.Existensia + ', locationId: "'+process.env.LOCATION_ID+'"}],inventoryItem: {tracked: true},';
             }
@@ -184,6 +196,7 @@ function createProductQuery(data) {
         query += ']';
     }else{
         query += 'variants: [{';
+        query += 'taxable: false,';
         if (data.Existensia) {
             query += 'inventoryQuantities: [{availableQuantity: ' + data.Existensia + ', locationId: "'+process.env.LOCATION_ID+'"}],';
         }
@@ -211,7 +224,7 @@ function transferOrders(shop, server) {
             moneyFormat
           }
         }
-        orders(first: 4, reverse: true)	{
+        orders(first: 3, reverse: true)	{
           edges {
             node {
                 legacyResourceId
@@ -314,12 +327,21 @@ function transferOrders(shop, server) {
                         customerId = customer.service_id;
                     }
                     addressId = await createAddress(server, data[i].node.shippingAddress, customerId);
-                    url = api_url + '/InsertarVentas?claveServicio=' + server.key_service + '&idEmpresa=' + server.company_id + '&idUsuario=' + server.user_id + '&idCliente=' + customerId + '&fechaEntrega=' + data[i].node.createdAt + '&direccion=' + addressId + '&direccionFacturacion=' + addressId +'&subtotal=' + data[i].node.subtotalPriceSet.shopMoney.amount + '&iva=0&descuento=' + data[i].node.totalDiscountsSet.shopMoney.amount + '&total=' + data[i].node.totalPriceSet.shopMoney.amount + '&comentarios=' + data[i].note + '&productos='+productString;
+                    url = api_url + '/InsertarVentasShopify?claveServicio=' + server.key_service + '&idEmpresa=' + server.company_id + '&idUsuario=' + server.user_id + '&idCliente=' + customerId + '&fechaEntrega=' + data[i].node.createdAt + '&direccion=' + addressId + '&idTipodeOrden=1&direccionFacturacion=' + addressId +'&subtotal=' + data[i].node.subtotalPriceSet.shopMoney.amount + '&CostoEnvio=0&descuento=' + data[i].node.totalDiscountsSet.shopMoney.amount + '&total=' + data[i].node.totalPriceSet.shopMoney.amount + '&comentarios=' + (data[i].note==null?"":data[i].note) + '&productos='+productString;
                     url = encodeURI(url);
                     console.log(url)
-                    let orderId = await axios.get(url);
+                    let orderId = await axios.get(url).catch(error=>{
+                        console.log(error)
+                    });
                     orderId = orderId.data;
                     await orderModel.addOrder({shopify_id: data[i].node.legacyResourceId, service_id: orderId[0].IdVenta});
+
+                    url = api_url + '/InsertarPagosClientesPorVenta?claveServicio=' + server.key_service + '&idEmpresa=' + server.company_id + '&idUsuario=' + server.user_id + '&idCliente=' + customerId + '&IdVenta=' + orderId[0].IdVenta + '&Monto=' + data[i].node.totalPriceSet.shopMoney.amount + '&FormaPago=11805&Voucher=&NoCuenta=';
+                    url = encodeURI(url);
+                    console.log(url)
+                    let paymentUrl = await axios.get(url).catch(error=>{
+                        console.log(error)
+                    });
                 }
             }
             resolve();
@@ -328,9 +350,11 @@ function transferOrders(shop, server) {
 }
 
 async function createCustomer(server, customer){
-    let url = api_url + "/InsertarCliente?claveServicio="+server.key_service+"&idEmpresa="+server.company_id+"&idUsuario="+server.user_id+"&nombre="+customer.firstName+"&apellidos="+customer.lastName+"&correo="+customer.email+"&password=12345&telefono="+(customer.phone==null?"empty":customer.phone);
+    let url = api_url + "/InsertarCliente?claveServicio="+server.key_service+"&idEmpresa="+server.company_id+"&idUsuario="+server.user_id+"&nombre="+customer.firstName+"&apellidos="+customer.lastName+"&correo="+(customer.email==null?"":customer.email)+"&password=12345&telefono="+(customer.phone==null?"":customer.phone);
     url = encodeURI(url);
     let result = await axios.get(url);
+    console.log(url)
+    console.log(result.data)
     if (customer.email != null){
         await customerModel.addCustomer({email: customer.email, service_id: result.data});
     }
@@ -345,4 +369,5 @@ async function createAddress(server, address, customerId){
 }
 
 module.exports.schedule = schedule;
+module.exports.scheduleOrder = scheduleOrder;
 module.exports.getProductList = getProductList;

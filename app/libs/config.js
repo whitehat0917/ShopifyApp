@@ -1,5 +1,5 @@
 const config = {
-    api_url: 'https://4f81c842dd97.ngrok.io/api/'
+    api_url: 'https://shopify.smuebleria.com/api/'
 };
 
 export default config;

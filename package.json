@@ -14,7 +14,7 @@
     "shopify",
     "app"
   ],
-  "author": "Olga Potapenko",
+  "author": "Whitehat",
   "license": "MIT",
   "dependencies": {
     "@koa/cors": "^3.1.0",
